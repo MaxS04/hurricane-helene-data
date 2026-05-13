@@ -10,10 +10,10 @@ library(sf)
 library(tigris)
 
 #read data
-hurricaneHWM <- readxl::read_excel(here("hurricane-helene-data", "HurricaneData", "Hurricane_Helene_HWM_Database_Table.xlsx")) %>%
+hurricaneHWM <- readxl::read_excel(here("HurricaneData", "Hurricane_Helene_HWM_Database_Table.xlsx")) %>%
   clean_names()
 
-hurricaneLS <- read_csv(here("hurricane-helene-data", "HurricaneData", "Landslide_Inventory_WithCounties.csv"))
+hurricaneLS <- read_csv(here("HurricaneData", "Landslide_Inventory_WithCounties.csv"))
 
 HWMbyHeight <- hurricaneHWM %>% arrange(-hwm_elevation_ft) %>%
   select(hwm_type, hwm_elevation_ft, northing, easting, county, state)
