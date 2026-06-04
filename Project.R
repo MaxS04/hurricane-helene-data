@@ -95,6 +95,6 @@ ggplot() +
   geom_sf(data = data_only, fill = "gray95", color = "white") +
   geom_sf(data = st_centroid(data_only),
           aes(size = Landslide_Count),
-          color = "red", alpha = 0.7) +
-  scale_size_continuous(range = c(1, 10)) +
-  theme_minimal()
+          color = "#1c9099", alpha = 0.7) +
+  scale_size_continuous(range = c(1, 10)) + 
+  theme_void()
