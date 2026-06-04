@@ -42,8 +42,14 @@ county_counts_impact <- landslidesByCounty %>%
 ggplot(HWMbyCounty, aes(x = county, y = hwm_elevation_ft)) +
   geom_point() + theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
-ggplot(HWMbyCounty, aes(x = paste(county, state, sep = ", "), y = hwm_elevation_ft)) +
-  stat_summary(fun = mean, geom = "bar")
+ggplot(HWMbyCounty, 
+       aes(x = paste(county, state, sep = ", "), 
+           y = hwm_elevation_ft)) +
+  stat_summary(fun = mean, geom = "bar") +
+  theme_minimal() +
+  labs(x = "County",
+       y = "HWM Elevation (ft)") +
+  coord_flip()
 
 ggplot(hurricaneLS, aes(x = COUNTYNAME)) +
   geom_bar()
