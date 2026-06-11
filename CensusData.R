@@ -16,8 +16,7 @@ library(RColorBrewer)
 # Tutorial to work with census data at: https://www.youtube.com/watch?v=1WKAeM8yR-0&t=3s
 # Request API key at: https://api.census.gov/data/key_signup.html
 
-#api_key <- 'XXX' ## Add your API key here
-api_key <- 'b3b4a0116be055b9ff20c0aa253e8aaaeffa2ebf'
+api_key <- 'XXX' ## Add your API key here
 census_api_key(api_key, install = TRUE)
 
 year <- 2023
