@@ -43,10 +43,6 @@ acs.normal <- acs.raw %>%
     geoid = GEOID,
     name = NAME,
     pop_total = B01001_001E,
-    household_data = B11001_001E,
-    income_past12M = B17001_002E,
-    pop_poverty_def = B17001_001E,
-    housing_units_total = B25001_001E,
     geometry = geometry,
     .keep = "none"
   )
@@ -94,6 +90,8 @@ acs.normal_density %>%
 
 
 # Creating interactive map with tmap ------------
+
+# an intro to this package:https://r-tmap.github.io/tmap/
 
 pal <- brewer.pal(9, "YlGnBu") # Setting color palette
 
