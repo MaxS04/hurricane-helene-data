@@ -8,6 +8,8 @@ library(units)
 library(crsuggest) #Uses data from the 'EPSG' Registry to look up suitable coordinate reference system transformations for spatial datasets.
 library(tmap)
 library(RColorBrewer) 
+library(here)
+library(tidyverse)
 
 
 
@@ -16,8 +18,8 @@ library(RColorBrewer)
 # Tutorial to work with census data at: https://www.youtube.com/watch?v=1WKAeM8yR-0&t=3s
 # Request API key at: https://api.census.gov/data/key_signup.html
 
-api_key <- 'XXXX' ## Add your API key here
-census_api_key(api_key, install = TRUE)
+api_key <- '' ## Add your API key here
+census_api_key(api_key, install = TRUE, overwrite=TRUE)
 
 year <- 2023
 
@@ -70,6 +72,20 @@ acs.normal_density <- acs.normal %>%
     pop_density = pop_total/as.numeric(area_sq_miles)
   )
 
+# Load landslide data, convert to spatial object to include in map
+landslides <- read_csv(here("HurricaneData", "Landslide_Inventory_WithCounties.csv"))
+landslides_sf <- st_as_sf(landslides, coords = c("X", "Y"), crs = 4326)
+
+# Load HWM Data
+hwm <- readxl::read_excel(here("HurricaneData", "Hurricane_Helene_HWM_Database_Table.xlsx"))
+hwm_sf <- st_as_sf(hwm,
+                   coords = c("Longitude (Decimal Degrees)", "Latitude (Decimal Degrees)"),
+                   crs = 4326)
+# Load NOAA Data
+storm <- read_csv(here("HurricaneData", "storm_data_search_results_Combined.csv"))
+storm_sf <- st_as_sf(storm,
+                     coords = c("BEGIN_LON", "BEGIN_LAT"),
+                     crs = 4326)
 
 
 # Creating static map population density --------------
@@ -92,20 +108,51 @@ acs.normal_density %>%
 
 # an intro to this package:https://r-tmap.github.io/tmap/
 
-pal <- brewer.pal(9, "YlGnBu") # Setting color palette
-
-tmap_mode("view") # setting mapviewer to interactive
+pal <- brewer.pal(9, "YlGnBu")
+tmap_mode("view")
 
 tm_shape(acs.normal_density) +
-  tm_polygons(fill = "pop_density",
-              alpha = 0.6, #adding some transparency to the map to allow labels visibility
-              n = 9,
-              style = "jenks",
-              midpoint = NA,
-              lwd = 0.5,
-              palette = pal,
-              border.col = "black")  +
-  tmap_options(basemaps = "CartoDB.Positron") 
+  tm_polygons(
+    fill = "pop_density",
+    fill.scale = tm_scale_intervals(
+      n = 9,
+      style = "jenks",
+      values = pal
+    ),
+    fill_alpha = 0.6,
+    lwd = 0.5,
+    col = "black"
+  ) +
+  #tm_text(
+    #text = "name",        # show name of the county
+   # size = 0.4,
+   # col = "black"
+  #) +
+  tm_shape(hwm_sf, name = "High Water Marks") +
+  tm_dots(
+    fill = "black",
+    size = 0.25,
+    popup.vars = c("HWM Name", "HWM Type", "HWM Quality",
+                   "HWM Elevation (ft)", "Stream", "County", "State")
+  ) +
+  tm_shape(landslides_sf, name = "Landslides") +
+  tm_symbols(
+    fill = "Impact",
+    fill.scale = tm_scale_categorical(values = "brewer.set1"),
+    fill.legend = tm_legend(title = "Landslide Impact"),
+    shape = 21,           # circle
+    size = 0.5,
+    col = NA,
+  ) +
+  tm_shape(storm_sf, name = "Storm Events") +
+  tm_dots(
+    fill = "#FF69B4",    # pink to differentiate from other layers
+    size = 0.3,
+    popup.vars = c("EVENT_TYPE", "STATE_ABBR", "CZ_NAME_STR",
+                   "BEGIN_LOCATION", "DEATHS_DIRECT", "INJURIES_DIRECT",
+                   "DAMAGE_PROPERTY_NUM", "DAMAGE_CROPS_NUM")
+  ) + 
+  tm_basemap("CartoDB.Positron")
 
 
 
