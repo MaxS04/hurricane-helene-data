@@ -10,6 +10,7 @@ library(tmap)
 library(RColorBrewer) 
 library(here)
 library(tidyverse)
+library(tidyr)
 
 
 
@@ -48,7 +49,25 @@ acs.normal <- acs.raw %>%
     .keep = "none"
   )
 
+counties <- acs.normal %>% 
+  separate(name, #separating information about county and state in two different columns
+           sep = ",",
+           into = c("county", "state"), 
+           remove = FALSE) %>% 
+  mutate(county = str_remove(county," County")) #removing the word "County" after their names
 
+
+# Creating state boundary polygons
+states <- counties %>% 
+  group_by(state) %>% 
+  summarise(geometry = st_union(geometry))
+
+
+# Adding affected counties 
+affected_counties <- st_read(here("Shapefiles","AffectedCounties.shp"))
+
+# Adding target counties 
+target_counties <- st_read(here("Shapefiles","TargetCounties.shp"))
 
 
 # Creating static map of total population ------
@@ -62,7 +81,7 @@ ggplot() +
   theme_void()
 
 # Calculate area in square meters, convert to sq miles, and estimate population density
-acs.normal_density <- acs.normal %>%
+acs.normal_density <- counties %>%
   mutate(
     # st_area returns area in square meters
     area_sq_meters = st_area(geometry),
@@ -111,7 +130,7 @@ acs.normal_density %>%
 pal <- brewer.pal(9, "YlGnBu")
 tmap_mode("view")
 
-tm_shape(acs.normal_density) +
+interactive_map <- tm_shape(acs.normal_density) +
   tm_polygons(
     fill = "pop_density",
     fill.scale = tm_scale_intervals(
@@ -123,18 +142,26 @@ tm_shape(acs.normal_density) +
     lwd = 0.5,
     col = "black"
   ) +
-  #tm_text(
-    #text = "name",        # show name of the county
-   # size = 0.4,
-   # col = "black"
-  #) +
+  # tm_text(
+  # text = "county",        # show name of the county
+  # size = 1,
+  # col = "black"
+  # ) +
+  tm_shape(target_counties, name = "Target Counties") +
+  tm_polygons(
+    fill = "#969696",
+    fill_alpha = 0.4) +
   tm_shape(hwm_sf, name = "High Water Marks") +
   tm_dots(
-    fill = "black",
+    fill = "#02818a",
     size = 0.25,
     popup.vars = c("HWM Name", "HWM Type", "HWM Quality",
                    "HWM Elevation (ft)", "Stream", "County", "State")
   ) +
+  tm_shape(states) +
+  tm_borders(col = "black", lwd = 2.5, lty = "solid") +
+  tm_shape(affected_counties) +
+  tm_borders(col = "#a50f15", lwd = 1.5, lty = "solid") +
   tm_shape(landslides_sf, name = "Landslides") +
   tm_symbols(
     fill = "Impact",
@@ -147,12 +174,14 @@ tm_shape(acs.normal_density) +
   tm_shape(storm_sf, name = "Storm Events") +
   tm_dots(
     fill = "#FF69B4",    # pink to differentiate from other layers
-    size = 0.3,
+    size = 0.5,
     popup.vars = c("EVENT_TYPE", "STATE_ABBR", "CZ_NAME_STR",
                    "BEGIN_LOCATION", "DEATHS_DIRECT", "INJURIES_DIRECT",
                    "DAMAGE_PROPERTY_NUM", "DAMAGE_CROPS_NUM")
   ) + 
   tm_basemap("CartoDB.Positron")
+
+tmap_save(interactive_map, here("Outputs", "map.html"))
 
 
 
