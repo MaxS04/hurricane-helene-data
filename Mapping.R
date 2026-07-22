@@ -5,6 +5,9 @@ library(sf)
 library(crsuggest) #Uses data from the 'EPSG' Registry to look up suitable coordinate reference system transformations for spatial datasets.
 library(tmap)
 library(RColorBrewer) 
+library(here)
+library(tidyverse)
+library(terra)
 
 
 # LOADING DATA-----------------------
@@ -27,6 +30,9 @@ storm <- read_csv(here("HurricaneData", "storm_data_search_results_Combined.csv"
 storm_sf <- st_as_sf(storm,
                      coords = c("BEGIN_LON", "BEGIN_LAT"),
                      crs = 4326)
+
+#Load landslide raster
+landslide_raster <- rast("USGS_NWS_LS_hazard_20240924T1200Z_0928T1200Z.tif")
 
 # CREATING MAP-----------------------
 
@@ -95,6 +101,12 @@ interactive_map <- tm_shape(pop.density) +
   tm_polygons(
     fill = "#969696",
     fill_alpha = 0.4) +
+  tm_shape(landslide_raster, name = "Landslide Hazard") +
+  tm_raster(
+    col.scale = tm_scale_continuous(values = "YlOrRd"),
+    col_alpha = 0.7,         # transparency so basemap shows through
+    col.legend = tm_legend(title = "Hazard Level")
+  ) +
   tm_shape(hwm_sf, name = "High Water Marks") +
   tm_dots(
     fill = "#02818a",
