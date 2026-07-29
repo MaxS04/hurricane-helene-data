@@ -8,15 +8,38 @@ library(RColorBrewer)
 library(here)
 library(tidyverse)
 library(terra)
+library(readxl)
+library(stringr)
 
 
 # LOADING DATA-----------------------
 
 states <- readRDS(here("Outputs", "states.rds"))
 
+#Load counties
+counties <- readRDS(here("Outputs", "counties.rds"))
+
+#Load subregions
+subregions <- read_excel("Subregions-in-Appalachia_2021_Data.xlsx",
+                         skip = 3,
+                         col_names = c("FIPS", "STATE", "COUNTY", "SUBREGION"))
+
+#Join subregions
+subregions <- subregions %>%
+  filter(!is.na(FIPS), FIPS != "FIPS") %>%
+  mutate(FIPS = as.character(FIPS),
+         # Pad to 5 digits to match GEOID format (e.g. "1007" -> "01007")
+         FIPS = str_pad(FIPS, width = 5, side = "left", pad = "0"))
+
+counties <- counties %>%
+  left_join(subregions %>% select(FIPS, SUBREGION),
+            by = c("geoid" = "FIPS")) %>%
+  mutate(SUBREGION = replace_na(SUBREGION, "Non-Appalachian"))
+
 # Load population data
 pop.total <- readRDS(here("Outputs", "pop_total.rds"))
 pop.density <- readRDS(here("Outputs", "pop_density.rds"))
+
 
 
 # Adding affected counties 
@@ -91,6 +114,14 @@ interactive_map <- tm_shape(pop.density) +
     fill_alpha = 0.6,
     lwd = 0.5,
     col = "black"
+  ) +
+  tm_shape(counties) +
+  tm_polygons(
+    fill = "SUBREGION",
+    fill.scale = tm_scale_categorical(values = "brewer.set2"),
+    fill.legend = tm_legend(title = "Appalachian Subregion"),
+    fill_alpha = 0.4,
+    col = NA
   ) +
   # tm_text(
   # text = "county",        # show name of the county
