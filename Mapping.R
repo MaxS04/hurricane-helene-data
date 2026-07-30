@@ -31,7 +31,7 @@ subregions <- subregions %>%
          # Pad to 5 digits to match GEOID format (e.g. "1007" -> "01007")
          FIPS = str_pad(FIPS, width = 5, side = "left", pad = "0"))
 
-counties <- counties %>%
+appalachian_subreg <- counties %>%
   left_join(subregions %>% select(FIPS, SUBREGION),
             by = c("geoid" = "FIPS")) %>%
   mutate(SUBREGION = replace_na(SUBREGION, "Non-Appalachian"))
@@ -44,6 +44,10 @@ pop.density <- readRDS(here("Outputs", "pop_density.rds"))
 
 # Adding affected counties 
 affected_counties <- st_read(here("Shapefiles","AffectedCounties.shp"))
+
+# Filtering out counties in Florida from this layer
+affected_counties <- affected_counties %>% 
+  filter(STATE != 'FL')
 
 # Adding target counties 
 target_counties <- st_read(here("Shapefiles","TargetCounties.shp"))
@@ -103,7 +107,7 @@ pop.density %>%
 pal <- brewer.pal(9, "YlGnBu")
 tmap_mode("view")
 
-interactive_map <- tm_shape(pop.density) +
+interactive_map <- tm_shape(pop.density, name = "Population Density") +
   tm_polygons(
     fill = "pop_density",
     fill.scale = tm_scale_intervals(
@@ -115,7 +119,7 @@ interactive_map <- tm_shape(pop.density) +
     lwd = 0.5,
     col = "black"
   ) +
-  tm_shape(counties) +
+  tm_shape(appalachian_subreg, name = "Appalachian Subregion") +
   tm_polygons(
     fill = "SUBREGION",
     fill.scale = tm_scale_categorical(values = "brewer.set2"),
@@ -147,7 +151,7 @@ interactive_map <- tm_shape(pop.density) +
   ) +
   tm_shape(states) +
   tm_borders(col = "black", lwd = 2.5, lty = "solid") +
-  tm_shape(affected_counties) +
+  tm_shape(affected_counties, name = "Affected Counties") +
   tm_borders(col = "#a50f15", lwd = 1.5, lty = "solid") +
   tm_shape(landslides_sf, name = "Landslides") +
   tm_symbols(
